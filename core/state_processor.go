@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -142,10 +143,19 @@ func ApplyTransactionWithEVM(header *types.Header, msg *Message, config *params.
 	gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
 	ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
 	ninetyPercent.Div(ninetyPercent, big.NewInt(100))
-	tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
+	ninetyPercentUint256, overflow := uint256.FromBig(ninetyPercent)
+	if overflow {
+		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
+	}
 
-	statedb.AddBalance(header.Coinbase, ninetyPercent)
-	statedb.AddBalance(specialAddress, tenPercent)
+	tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
+	tenPercentUint256, overflow := uint256.FromBig(tenPercent)
+	if overflow {
+		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
+	}
+
+	statedb.AddBalance(header.Coinbase, ninetyPercentUint256, tracing.TransactionFee)
+	statedb.AddBalance(specialAddress, tenPercentUint256, tracing.TransactionFee)
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used
 	// by the tx.
