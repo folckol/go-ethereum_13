@@ -172,16 +172,20 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	txContext := NewEVMTxContext(msg)
 	evm := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
 
+	var result *vm.ExecutionResult // Объявление result здесь, чтобы оно было доступно в defer
+
 	// Начало выполнения транзакции
 	if evm.Config.Tracer != nil {
 		evm.Config.Tracer.CaptureTxStart(tx.Gas())
 		defer func() {
-			evm.Config.Tracer.CaptureTxEnd(result.GasUsed()) // result должен быть доступен в этом контексте, убедитесь, что он объявлен корректно
+			if result != nil { // Проверка, что result определен
+				evm.Config.Tracer.CaptureTxEnd(result.GasUsed())
+			}
 		}()
 	}
 
 	evm.Reset(txContext, statedb)
-	result, err := ApplyMessage(evm, msg, gp)
+	result, err = ApplyMessage(evm, msg, gp) // Присвоение значения result
 	if err != nil {
 		return nil, err
 	}
