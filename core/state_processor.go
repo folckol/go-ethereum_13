@@ -237,6 +237,11 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 		Status: result.Status(), TxHash: tx.Hash(), GasUsed: result.UsedGas,
 		BlockHash: blockHash, BlockNumber: blockNumber, TransactionIndex: uint(statedb.TxIndex()),
 	}
+	if result.Failed() {
+		receipt.Status = types.ReceiptStatusFailed
+	} else {
+		receipt.Status = types.ReceiptStatusSuccessful
+	}
 
 	if tx.Type() == types.BlobTxType {
 		receipt.BlobGasUsed = uint64(len(tx.BlobHashes()) * params.BlobTxBlobGasPerBlob)
