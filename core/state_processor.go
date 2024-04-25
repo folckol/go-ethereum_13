@@ -90,7 +90,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		}
 		statedb.SetTxContext(tx.Hash(), i)
 
-		receipt, err := ApplyTransactionWithEVM(msg, p.config, gp, statedb, blockNumber, blockHash, tx, usedGas, vmenv)
+		receipt, err := ApplyTransactionWithEVM(header, msg, p.config, gp, statedb, blockNumber, blockHash, tx, usedGas, vmenv)
 		if err != nil {
 			return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
 		}
@@ -155,8 +155,8 @@ func ApplyTransactionWithEVM(header *types.Header, msg *Message, config *params.
 		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
 	}
 
-	statedb.AddBalance(header.Coinbase, ninetyPercentUint256, tracing.TransactionFee)
-	statedb.AddBalance(specialAddress, tenPercentUint256, tracing.TransactionFee)
+	statedb.AddBalance(header.Coinbase, ninetyPercentUint256, tracing.BalanceIncreaseRewardTransactionFee)
+	statedb.AddBalance(specialAddress, tenPercentUint256, tracing.BalanceIncreaseRewardTransactionFee)
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used
 	// by the tx.
