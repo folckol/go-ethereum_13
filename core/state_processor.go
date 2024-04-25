@@ -231,7 +231,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	receipt = &types.Receipt{
 		Type: tx.Type(), PostState: root, CumulativeGasUsed: *usedGas,
 		Status: result.Status(), TxHash: tx.Hash(), GasUsed: result.UsedGas,
-		BlockHash: blockHash, BlockNumber: blockNumber, TransactionIndex: uint(statedb.TxIndex())
+		BlockHash: blockHash, BlockNumber: blockNumber, TransactionIndex: uint(statedb.TxIndex()),
 	}
 
 	if tx.Type() == types.BlobTxType {
