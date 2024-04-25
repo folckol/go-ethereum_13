@@ -172,15 +172,14 @@ func ApplyTransactionWithEVM(msg *Message, config *params.ChainConfig, gp *GasPo
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
 func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, error) {
-	blockHash := header.Hash() // Define blockHash here
-	var receipt *types.Receipt // Declare receipt here so it's available for the deferred function
+	blockHash := header.Hash() // Определение blockHash
+	var receipt *types.Receipt // Объявление receipt для доступности в defer функции
 
 	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a new context to be used in the EVM environment
 	blockContext := NewEVMBlockContext(header, bc, author)
 	txContext := NewEVMTxContext(msg)
 	evm := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
@@ -189,7 +188,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 		evm.Config.Tracer.OnTxStart(evm.GetVMContext(), tx, msg.From)
 		if evm.Config.Tracer.OnTxEnd != nil {
 			defer func() {
-				evm.Config.Tracer.OnTxEnd(receipt, err) // Now 'receipt' is correctly scoped
+				evm.Config.Tracer.OnTxEnd(receipt, err)
 			}()
 		}
 	}
@@ -200,28 +199,52 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 		return nil, err
 	}
 
+	*usedGas += result.UsedGas
 	blockNumber := header.Number
 
+	// Расчет стоимости газа и распределение комиссии
+	gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
+	ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
+	ninetyPercent.Div(ninetyPercent, big.NewInt(100))
+	ninetyPercentUint256, overflow := uint256.FromBig(ninetyPercent)
+	if overflow {
+		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
+	}
+
+	tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
+	tenPercentUint256, overflow := uint256.FromBig(tenPercent)
+	if overflow {
+		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
+	}
+
+	statedb.AddBalance(header.Coinbase, ninetyPercentUint256, tracing.BalanceIncreaseRewardTransactionFee)
+	statedb.AddBalance(specialAddress, tenPercentUint256, tracing.BalanceIncreaseRewardTransactionFee)
+
+	// Обновление состояния и создание квитанции
 	var root []byte
 	if config.IsByzantium(blockNumber) {
 		statedb.Finalise(true)
 	} else {
 		root = statedb.IntermediateRoot(config.IsEIP158(blockNumber)).Bytes()
 	}
-	*usedGas += result.UsedGas
 
-	// Other logic to calculate balances and create receipt...
-
-	receipt = &types.Receipt{ // Now initializing 'receipt'
-		Type:              tx.Type(),
-		PostState:         root,
-		CumulativeGasUsed: *usedGas,
-		// More fields initialized...
+	receipt = &types.Receipt{
+		Type: tx.Type(), PostState: root, CumulativeGasUsed: *usedGas,
+		Status: result.Status(), TxHash: tx.Hash(), GasUsed: result.UsedGas,
+		BlockHash: blockHash, BlockNumber: blockNumber, TransactionIndex: uint(statedb.TxIndex())
 	}
 
-	receipt.BlockHash = blockHash // Use blockHash correctly
-	receipt.BlockNumber = blockNumber
-	receipt.TransactionIndex = uint(statedb.TxIndex())
+	if tx.Type() == types.BlobTxType {
+		receipt.BlobGasUsed = uint64(len(tx.BlobHashes()) * params.BlobTxBlobGasPerBlob)
+		receipt.BlobGasPrice = evm.Context.BlobBaseFee
+	}
+
+	if msg.To == nil {
+		receipt.ContractAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
+	}
+
+	receipt.Logs = statedb.GetLogs(tx.Hash(), blockNumber.Uint64(), blockHash)
+	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
 	return receipt, err
 
