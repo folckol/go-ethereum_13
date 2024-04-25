@@ -172,13 +172,12 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	txContext := NewEVMTxContext(msg)
 	evm := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
 
-	if evm.Config.Tracer != nil && evm.Config.Tracer.OnTxStart != nil {
-		evm.Config.Tracer.OnTxStart(evm.GetVMContext(), tx, msg.From)
-		if evm.Config.Tracer.OnTxEnd != nil {
-			defer func() {
-				evm.Config.Tracer.OnTxEnd(receipt, err)
-			}()
-		}
+	// Начало выполнения транзакции
+	if evm.Config.Tracer != nil {
+		evm.Config.Tracer.CaptureTxStart(tx.Gas())
+		defer func() {
+			evm.Config.Tracer.CaptureTxEnd(result.GasUsed()) // result должен быть доступен в этом контексте, убедитесь, что он объявлен корректно
+		}()
 	}
 
 	evm.Reset(txContext, statedb)
@@ -242,8 +241,6 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
 	return receipt, err
-
-	//return ApplyTransactionWithEVM(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
 
 }
 
