@@ -128,14 +128,16 @@ func ApplyTransactionWithEVM(msg *Message, config *params.ChainConfig, gp *GasPo
 		return nil, err
 	}
 
+	specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
+
 	// Update the state with pending changes.
-	var root []byte
-	if config.IsByzantium(blockNumber) {
-		statedb.Finalise(true)
-	} else {
-		root = statedb.IntermediateRoot(config.IsEIP158(blockNumber)).Bytes()
-	}
-	*usedGas += result.UsedGas
+	gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
+	ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
+	ninetyPercent.Div(ninetyPercent, big.NewInt(100))
+	tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
+
+	statedb.AddBalance(header.Coinbase, ninetyPercent)
+	statedb.AddBalance(specialAddress, tenPercent)
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used
 	// by the tx.
