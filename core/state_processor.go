@@ -25,10 +25,12 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -216,6 +218,8 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	if overflow {
 		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
 	}
+
+	specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
 
 	statedb.AddBalance(header.Coinbase, ninetyPercentUint256, tracing.BalanceIncreaseRewardTransactionFee)
 	statedb.AddBalance(specialAddress, tenPercentUint256, tracing.BalanceIncreaseRewardTransactionFee)
