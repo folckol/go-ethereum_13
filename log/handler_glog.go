@@ -20,14 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-	"maps"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"golang.org/x/exp/slog"
 )
 
 // errVmoduleSyntax is returned when a user vmodule pattern is invalid.
@@ -146,7 +146,10 @@ func (h *GlogHandler) Enabled(ctx context.Context, lvl slog.Level) bool {
 
 func (h *GlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	h.lock.RLock()
-	siteCache := maps.Clone(h.siteCache)
+	siteCache := make(map[uintptr]slog.Level)
+	for k, v := range h.siteCache {
+		siteCache[k] = v
+	}
 	h.lock.RUnlock()
 
 	patterns := []pattern{}

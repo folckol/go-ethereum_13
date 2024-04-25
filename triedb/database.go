@@ -108,12 +108,12 @@ func NewDatabase(diskdb ethdb.Database, config *Config) *Database {
 		log.Crit("Both 'hash' and 'path' mode are configured")
 	}
 	if config.PathDB != nil {
-		db.backend = pathdb.New(diskdb, config.PathDB, config.IsVerkle)
+		db.backend = pathdb.New(diskdb, config.PathDB)
 	} else {
 		var resolver hashdb.ChildResolver
 		if config.IsVerkle {
 			// TODO define verkle resolver
-			log.Crit("verkle does not use a hash db")
+			log.Crit("Verkle node resolver is not defined")
 		} else {
 			resolver = trie.MerkleResolver{}
 		}

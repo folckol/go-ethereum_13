@@ -32,7 +32,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/beacon"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -453,7 +452,6 @@ func newGQLService(t *testing.T, stack *node.Node, shanghai bool, gspec *core.Ge
 		TrieDirtyCache: 5,
 		TrieTimeout:    60 * time.Minute,
 		SnapshotCache:  5,
-		StateScheme:    rawdb.HashScheme,
 	}
 	var engine consensus.Engine = ethash.NewFaker()
 	if shanghai {

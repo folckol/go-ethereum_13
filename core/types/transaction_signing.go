@@ -107,7 +107,13 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 
 // SignNewTx creates a transaction and signs it.
 func SignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
-	return SignTx(NewTx(txdata), s, prv)
+	tx := NewTx(txdata)
+	h := s.Hash(tx)
+	sig, err := crypto.Sign(h[:], prv)
+	if err != nil {
+		return nil, err
+	}
+	return tx.WithSignature(s, sig)
 }
 
 // MustSignNewTx creates a transaction and signs it.
@@ -128,7 +134,8 @@ func MustSignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) *Transaction 
 // signing method. The cache is invalidated if the cached signer does
 // not match the signer used in the current call.
 func Sender(signer Signer, tx *Transaction) (common.Address, error) {
-	if sigCache := tx.from.Load(); sigCache != nil {
+	if sc := tx.from.Load(); sc != nil {
+		sigCache := sc.(sigCache)
 		// If the signer used to derive from in a previous
 		// call is not the same as used current, invalidate
 		// the cache.
@@ -141,7 +148,7 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	if err != nil {
 		return common.Address{}, err
 	}
-	tx.from.Store(&sigCache{signer: signer, from: addr})
+	tx.from.Store(sigCache{signer: signer, from: addr})
 	return addr, nil
 }
 

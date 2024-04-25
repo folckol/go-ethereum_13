@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/state/snapshot"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -228,15 +227,15 @@ func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config, snapshotter bo
 
 // RunNoVerify runs a specific subtest and returns the statedb and post-state root.
 // Remember to call state.Close after verifying the test result!
-func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapshotter bool, scheme string) (st StateTestState, root common.Hash, err error) {
+func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapshotter bool, scheme string) (state StateTestState, root common.Hash, err error) {
 	config, eips, err := GetChainConfig(subtest.Fork)
 	if err != nil {
-		return st, common.Hash{}, UnsupportedForkError{subtest.Fork}
+		return state, common.Hash{}, UnsupportedForkError{subtest.Fork}
 	}
 	vmconfig.ExtraEips = eips
 
 	block := t.genesis(config).ToBlock()
-	st = MakePreState(rawdb.NewMemoryDatabase(), t.json.Pre, snapshotter, scheme)
+	state = MakePreState(rawdb.NewMemoryDatabase(), t.json.Pre, snapshotter, scheme)
 
 	var baseFee *big.Int
 	if config.IsLondon(new(big.Int)) {
@@ -250,7 +249,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	post := t.json.Post[subtest.Fork][subtest.Index]
 	msg, err := t.json.Tx.toMessage(post, baseFee)
 	if err != nil {
-		return st, common.Hash{}, err
+		return state, common.Hash{}, err
 	}
 
 	{ // Blob transactions may be present after the Cancun fork.
@@ -260,7 +259,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 		// Here, we just do this shortcut smaller fix, since state tests do not
 		// utilize those codepaths
 		if len(msg.BlobHashes)*params.BlobTxBlobGasPerBlob > params.MaxBlobGasPerBlock {
-			return st, common.Hash{}, errors.New("blob gas exceeds maximum")
+			return state, common.Hash{}, errors.New("blob gas exceeds maximum")
 		}
 	}
 
@@ -269,10 +268,10 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 		var ttx types.Transaction
 		err := ttx.UnmarshalBinary(post.TxBytes)
 		if err != nil {
-			return st, common.Hash{}, err
+			return state, common.Hash{}, err
 		}
 		if _, err := types.Sender(types.LatestSigner(config), &ttx); err != nil {
-			return st, common.Hash{}, err
+			return state, common.Hash{}, err
 		}
 	}
 
@@ -293,34 +292,26 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	if config.IsCancun(new(big.Int), block.Time()) && t.json.Env.ExcessBlobGas != nil {
 		context.BlobBaseFee = eip4844.CalcBlobFee(*t.json.Env.ExcessBlobGas)
 	}
-	evm := vm.NewEVM(context, txContext, st.StateDB, config, vmconfig)
+	evm := vm.NewEVM(context, txContext, state.StateDB, config, vmconfig)
 
-	if tracer := vmconfig.Tracer; tracer != nil && tracer.OnTxStart != nil {
-		tracer.OnTxStart(evm.GetVMContext(), nil, msg.From)
-		if evm.Config.Tracer.OnTxEnd != nil {
-			defer func() {
-				evm.Config.Tracer.OnTxEnd(nil, err)
-			}()
-		}
-	}
 	// Execute the message.
-	snapshot := st.StateDB.Snapshot()
+	snapshot := state.StateDB.Snapshot()
 	gaspool := new(core.GasPool)
 	gaspool.AddGas(block.GasLimit())
 	_, err = core.ApplyMessage(evm, msg, gaspool)
 	if err != nil {
-		st.StateDB.RevertToSnapshot(snapshot)
+		state.StateDB.RevertToSnapshot(snapshot)
 	}
 	// Add 0-value mining reward. This only makes a difference in the cases
 	// where
 	// - the coinbase self-destructed, or
 	// - there are only 'bad' transactions, which aren't executed. In those cases,
 	//   the coinbase gets no txfee, so isn't created, and thus needs to be touched
-	st.StateDB.AddBalance(block.Coinbase(), new(uint256.Int), tracing.BalanceChangeUnspecified)
+	state.StateDB.AddBalance(block.Coinbase(), new(uint256.Int))
 
 	// Commit state mutations into database.
-	root, _ = st.StateDB.Commit(block.NumberU64(), config.IsEIP158(block.Number()))
-	return st, root, err
+	root, _ = state.StateDB.Commit(block.NumberU64(), config.IsEIP158(block.Number()))
+	return state, root, err
 }
 
 func (t *StateTest) gasLimit(subtest StateSubtest) uint64 {
@@ -465,7 +456,7 @@ func MakePreState(db ethdb.Database, accounts types.GenesisAlloc, snapshotter bo
 	for addr, a := range accounts {
 		statedb.SetCode(addr, a.Code)
 		statedb.SetNonce(addr, a.Nonce)
-		statedb.SetBalance(addr, uint256.MustFromBig(a.Balance), tracing.BalanceChangeUnspecified)
+		statedb.SetBalance(addr, uint256.MustFromBig(a.Balance))
 		for k, v := range a.Storage {
 			statedb.SetState(addr, k, v)
 		}

@@ -18,7 +18,6 @@ package vm
 
 import (
 	"bytes"
-	"errors"
 	"math"
 	"math/big"
 	"sort"
@@ -99,7 +98,7 @@ func TestEIP2200(t *testing.T) {
 		vmenv := NewEVM(vmctx, TxContext{}, statedb, params.AllEthashProtocolChanges, Config{ExtraEips: []int{2200}})
 
 		_, gas, err := vmenv.Call(AccountRef(common.Address{}), address, nil, tt.gaspool, new(uint256.Int))
-		if !errors.Is(err, tt.failure) {
+		if err != tt.failure {
 			t.Errorf("test %d: failure mismatch: have %v, want %v", i, err, tt.failure)
 		}
 		if used := tt.gaspool - gas; used != tt.used {

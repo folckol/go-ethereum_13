@@ -1131,12 +1131,8 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 		next    = p.state.GetNonce(from)
 	)
 	if uint64(len(p.index[from])) > tx.Nonce()-next {
-		prev := p.index[from][int(tx.Nonce()-next)]
-		// Ensure the transaction is different than the one tracked locally
-		if prev.hash == tx.Hash() {
-			return txpool.ErrAlreadyKnown
-		}
 		// Account can support the replacement, but the price bump must also be met
+		prev := p.index[from][int(tx.Nonce()-next)]
 		switch {
 		case tx.GasFeeCapIntCmp(prev.execFeeCap.ToBig()) <= 0:
 			return fmt.Errorf("%w: new tx gas fee cap %v <= %v queued", txpool.ErrReplaceUnderpriced, tx.GasFeeCap(), prev.execFeeCap)
@@ -1226,7 +1222,7 @@ func (p *BlobPool) Add(txs []*types.Transaction, local bool, sync bool) []error 
 	return errs
 }
 
-// add inserts a new blob transaction into the pool if it passes validation (both
+// Add inserts a new blob transaction into the pool if it passes validation (both
 // consensus validity and pool restrictions).
 func (p *BlobPool) add(tx *types.Transaction) (err error) {
 	// The blob pool blocks on adding a transaction. This is because blob txs are

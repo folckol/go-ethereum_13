@@ -99,8 +99,6 @@ if one is set.  Otherwise it prints the genesis from the datadir.`,
 			utils.MetricsInfluxDBBucketFlag,
 			utils.MetricsInfluxDBOrganizationFlag,
 			utils.TxLookupLimitFlag,
-			utils.VMTraceFlag,
-			utils.VMTraceConfigFlag,
 			utils.TransactionHistoryFlag,
 			utils.StateHistoryFlag,
 		}, utils.DatabaseFlags),
@@ -446,7 +444,7 @@ func importHistory(ctx *cli.Context) error {
 			return fmt.Errorf("no era1 files found in %s", dir)
 		}
 		if len(networks) > 1 {
-			return errors.New("multiple networks found, use a network flag to specify desired network")
+			return fmt.Errorf("multiple networks found, use a network flag to specify desired network")
 		}
 		network = networks[0]
 	}
@@ -516,10 +514,13 @@ func importPreimages(ctx *cli.Context) error {
 	return nil
 }
 
-func parseDumpConfig(ctx *cli.Context, stack *node.Node, db ethdb.Database) (*state.DumpConfig, common.Hash, error) {
+func parseDumpConfig(ctx *cli.Context, stack *node.Node) (*state.DumpConfig, ethdb.Database, common.Hash, error) {
+	db := utils.MakeChainDatabase(ctx, stack, true)
+	defer db.Close()
+
 	var header *types.Header
 	if ctx.NArg() > 1 {
-		return nil, common.Hash{}, fmt.Errorf("expected 1 argument (number or hash), got %d", ctx.NArg())
+		return nil, nil, common.Hash{}, fmt.Errorf("expected 1 argument (number or hash), got %d", ctx.NArg())
 	}
 	if ctx.NArg() == 1 {
 		arg := ctx.Args().First()
@@ -528,17 +529,17 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node, db ethdb.Database) (*st
 			if number := rawdb.ReadHeaderNumber(db, hash); number != nil {
 				header = rawdb.ReadHeader(db, hash, *number)
 			} else {
-				return nil, common.Hash{}, fmt.Errorf("block %x not found", hash)
+				return nil, nil, common.Hash{}, fmt.Errorf("block %x not found", hash)
 			}
 		} else {
 			number, err := strconv.ParseUint(arg, 10, 64)
 			if err != nil {
-				return nil, common.Hash{}, err
+				return nil, nil, common.Hash{}, err
 			}
 			if hash := rawdb.ReadCanonicalHash(db, number); hash != (common.Hash{}) {
 				header = rawdb.ReadHeader(db, hash, number)
 			} else {
-				return nil, common.Hash{}, fmt.Errorf("header for block %d not found", number)
+				return nil, nil, common.Hash{}, fmt.Errorf("header for block %d not found", number)
 			}
 		}
 	} else {
@@ -546,7 +547,7 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node, db ethdb.Database) (*st
 		header = rawdb.ReadHeadHeader(db)
 	}
 	if header == nil {
-		return nil, common.Hash{}, errors.New("no head block found")
+		return nil, nil, common.Hash{}, errors.New("no head block found")
 	}
 	startArg := common.FromHex(ctx.String(utils.StartKeyFlag.Name))
 	var start common.Hash
@@ -558,7 +559,7 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node, db ethdb.Database) (*st
 		start = crypto.Keccak256Hash(startArg)
 		log.Info("Converting start-address to hash", "address", common.BytesToAddress(startArg), "hash", start.Hex())
 	default:
-		return nil, common.Hash{}, fmt.Errorf("invalid start argument: %x. 20 or 32 hex-encoded bytes required", startArg)
+		return nil, nil, common.Hash{}, fmt.Errorf("invalid start argument: %x. 20 or 32 hex-encoded bytes required", startArg)
 	}
 	var conf = &state.DumpConfig{
 		SkipCode:          ctx.Bool(utils.ExcludeCodeFlag.Name),
@@ -570,17 +571,14 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node, db ethdb.Database) (*st
 	log.Info("State dump configured", "block", header.Number, "hash", header.Hash().Hex(),
 		"skipcode", conf.SkipCode, "skipstorage", conf.SkipStorage,
 		"start", hexutil.Encode(conf.Start), "limit", conf.Max)
-	return conf, header.Root, nil
+	return conf, db, header.Root, nil
 }
 
 func dump(ctx *cli.Context) error {
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
-	db := utils.MakeChainDatabase(ctx, stack, true)
-	defer db.Close()
-
-	conf, root, err := parseDumpConfig(ctx, stack, db)
+	conf, db, root, err := parseDumpConfig(ctx, stack)
 	if err != nil {
 		return err
 	}

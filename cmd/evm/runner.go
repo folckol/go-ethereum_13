@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/eth/tracers/logger"
@@ -117,7 +116,7 @@ func runCmd(ctx *cli.Context) error {
 	}
 
 	var (
-		tracer      *tracing.Hooks
+		tracer      vm.EVMLogger
 		debugLogger *logger.StructLogger
 		statedb     *state.StateDB
 		chainConfig *params.ChainConfig
@@ -131,7 +130,7 @@ func runCmd(ctx *cli.Context) error {
 		tracer = logger.NewJSONLogger(logconfig, os.Stdout)
 	} else if ctx.Bool(DebugFlag.Name) {
 		debugLogger = logger.NewStructLogger(logconfig)
-		tracer = debugLogger.Hooks()
+		tracer = debugLogger
 	} else {
 		debugLogger = logger.NewStructLogger(logconfig)
 	}
@@ -272,17 +271,8 @@ func runCmd(ctx *cli.Context) error {
 	output, leftOverGas, stats, err := timedExec(bench, execFunc)
 
 	if ctx.Bool(DumpFlag.Name) {
-		root, err := statedb.Commit(genesisConfig.Number, true)
-		if err != nil {
-			fmt.Printf("Failed to commit changes %v\n", err)
-			return err
-		}
-		dumpdb, err := state.New(root, sdb, nil)
-		if err != nil {
-			fmt.Printf("Failed to open statedb %v\n", err)
-			return err
-		}
-		fmt.Println(string(dumpdb.Dump(nil)))
+		statedb.Commit(genesisConfig.Number, true)
+		fmt.Println(string(statedb.Dump(nil)))
 	}
 
 	if ctx.Bool(DebugFlag.Name) {

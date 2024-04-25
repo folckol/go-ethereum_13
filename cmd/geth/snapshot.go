@@ -36,7 +36,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 )
 
 var (
@@ -541,10 +541,7 @@ func dumpState(ctx *cli.Context) error {
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
-	db := utils.MakeChainDatabase(ctx, stack, true)
-	defer db.Close()
-
-	conf, root, err := parseDumpConfig(ctx, stack, db)
+	conf, db, root, err := parseDumpConfig(ctx, stack)
 	if err != nil {
 		return err
 	}

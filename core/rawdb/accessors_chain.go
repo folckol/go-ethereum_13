@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"slices"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
@@ -32,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"golang.org/x/exp/slices"
 )
 
 // ReadCanonicalHash retrieves the hash assigned to a canonical block number.
@@ -695,7 +695,7 @@ func (r *receiptLogs) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-// deriveLogFields fills the logs in receiptLogs with information such as block number, txhash, etc.
+// DeriveLogFields fills the logs in receiptLogs with information such as block number, txhash, etc.
 func deriveLogFields(receipts []*receiptLogs, hash common.Hash, number uint64, txs types.Transactions) error {
 	logIndex := uint(0)
 	if len(txs) != len(receipts) {

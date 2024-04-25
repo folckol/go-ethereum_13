@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"math/big"
-	"slices"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/bloombits"
@@ -334,7 +333,7 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) ([]*typ
 
 // pendingLogs returns the logs matching the filter criteria within the pending block.
 func (f *Filter) pendingLogs() []*types.Log {
-	block, receipts, _ := f.sys.backend.Pending()
+	block, receipts := f.sys.backend.PendingBlockAndReceipts()
 	if block == nil || receipts == nil {
 		return nil
 	}
@@ -348,6 +347,16 @@ func (f *Filter) pendingLogs() []*types.Log {
 	return nil
 }
 
+// includes returns true if the element is present in the list.
+func includes[T comparable](things []T, element T) bool {
+	for _, thing := range things {
+		if thing == element {
+			return true
+		}
+	}
+	return false
+}
+
 // filterLogs creates a slice of logs matching the given criteria.
 func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.Hash) []*types.Log {
 	var check = func(log *types.Log) bool {
@@ -357,7 +366,7 @@ func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []comm
 		if toBlock != nil && toBlock.Int64() >= 0 && toBlock.Uint64() < log.BlockNumber {
 			return false
 		}
-		if len(addresses) > 0 && !slices.Contains(addresses, log.Address) {
+		if len(addresses) > 0 && !includes(addresses, log.Address) {
 			return false
 		}
 		// If the to filtered topics is greater than the amount of topics in logs, skip.
@@ -368,7 +377,7 @@ func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []comm
 			if len(sub) == 0 {
 				continue // empty rule set == wildcard
 			}
-			if !slices.Contains(sub, log.Topics[i]) {
+			if !includes(sub, log.Topics[i]) {
 				return false
 			}
 		}

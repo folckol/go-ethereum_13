@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"math/big"
 	"reflect"
 	"testing"
@@ -516,7 +515,10 @@ func TestYParityJSONUnmarshalling(t *testing.T) {
 			test := test
 			t.Run(fmt.Sprintf("txType=%d: %s", txType, test.name), func(t *testing.T) {
 				// Copy the base json
-				testJson := maps.Clone(baseJson)
+				testJson := make(map[string]interface{})
+				for k, v := range baseJson {
+					testJson[k] = v
+				}
 
 				// Set v, yParity and type
 				if test.v != "" {

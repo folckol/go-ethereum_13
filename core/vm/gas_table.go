@@ -18,7 +18,6 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -311,11 +310,8 @@ func gasCreateEip3860(evm *EVM, contract *Contract, stack *Stack, mem *Memory, m
 		return 0, err
 	}
 	size, overflow := stack.Back(2).Uint64WithOverflow()
-	if overflow {
+	if overflow || size > params.MaxInitCodeSize {
 		return 0, ErrGasUintOverflow
-	}
-	if size > params.MaxInitCodeSize {
-		return 0, fmt.Errorf("%w: size %d", ErrMaxInitCodeSizeExceeded, size)
 	}
 	// Since size <= params.MaxInitCodeSize, these multiplication cannot overflow
 	moreGas := params.InitCodeWordGas * ((size + 31) / 32)
@@ -330,11 +326,8 @@ func gasCreate2Eip3860(evm *EVM, contract *Contract, stack *Stack, mem *Memory, 
 		return 0, err
 	}
 	size, overflow := stack.Back(2).Uint64WithOverflow()
-	if overflow {
+	if overflow || size > params.MaxInitCodeSize {
 		return 0, ErrGasUintOverflow
-	}
-	if size > params.MaxInitCodeSize {
-		return 0, fmt.Errorf("%w: size %d", ErrMaxInitCodeSizeExceeded, size)
 	}
 	// Since size <= params.MaxInitCodeSize, these multiplication cannot overflow
 	moreGas := (params.InitCodeWordGas + params.Keccak256WordGas) * ((size + 31) / 32)

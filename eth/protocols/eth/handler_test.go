@@ -63,7 +63,7 @@ func newTestBackend(blocks int) *testBackend {
 	return newTestBackendWithGenerator(blocks, false, nil)
 }
 
-// newTestBackendWithGenerator creates a chain with a number of explicitly defined blocks and
+// newTestBackend creates a chain with a number of explicitly defined blocks and
 // wraps it into a mock backend.
 func newTestBackendWithGenerator(blocks int, shanghai bool, generator func(int, *core.BlockGen)) *testBackend {
 	var (
