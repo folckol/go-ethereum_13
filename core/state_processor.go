@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/tracing"
 	"github.com/holiman/uint256"
 )
 
@@ -155,8 +154,8 @@ func ApplyTransactionWithEVM(header *types.Header, msg *Message, config *params.
 		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
 	}
 
-	statedb.AddBalance(header.Coinbase, ninetyPercentUint256, tracing.TransactionFee)
-	statedb.AddBalance(specialAddress, tenPercentUint256, tracing.TransactionFee)
+	statedb.AddBalance(header.Coinbase, ninetyPercentUint256)
+	statedb.AddBalance(specialAddress, tenPercentUint256)
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used
 	// by the tx.
