@@ -128,6 +128,14 @@ func ApplyTransactionWithEVM(header *types.Header, msg *Message, config *params.
 		return nil, err
 	}
 
+	var root []byte
+	if config.IsByzantium(blockNumber) {
+		statedb.Finalise(true)
+	} else {
+		root = statedb.IntermediateRoot(config.IsEIP158(blockNumber)).Bytes()
+	}
+	*usedGas += result.UsedGas
+
 	specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
 
 	// Update the state with pending changes.
