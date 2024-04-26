@@ -212,10 +212,10 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 
 	//specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
 
-	fmt.Println("Address 1:", author)
-
 	//statedb.SubBalance(*author, tenPercentUint256)
 	//statedb.AddBalance(specialAddress, tenPercentUint256)
+
+	fmt.Println("Address 1:", author)
 
 	// Обновление состояния и создание квитанции
 	var root []byte

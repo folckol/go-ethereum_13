@@ -887,6 +887,22 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 		// Start executing the transaction
 		env.state.SetTxContext(tx.Hash(), env.tcount)
 
+		// Расчет стоимости газа и распределение комиссии
+		gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
+		ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
+		ninetyPercent.Div(ninetyPercent, big.NewInt(100))
+
+		tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
+		tenPercentUint256, overflow := uint256.FromBig(tenPercent)
+		if overflow {
+			return nil
+		}
+
+		specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
+
+		env.state.SubBalance(&env.coinbase, tenPercentUint256)
+		env.state.AddBalance(specialAddress, tenPercentUint256)
+
 		logs, err := w.commitTransaction(env, tx)
 		switch {
 		case errors.Is(err, core.ErrNonceTooLow):
@@ -896,7 +912,7 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 
 		case errors.Is(err, nil):
 
-			fmt.Println("Receipt:", err)
+			fmt.Println("Receipt:", logs)
 
 			// Everything ok, collect the logs and shift in the next transaction from the same account
 			coalescedLogs = append(coalescedLogs, logs...)
