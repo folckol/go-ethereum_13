@@ -201,7 +201,6 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
 	ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
 	ninetyPercent.Div(ninetyPercent, big.NewInt(100))
-	ninetyPercentUint256, overflow := uint256.FromBig(ninetyPercent)
 	if overflow {
 		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
 	}
@@ -216,7 +215,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 
 	fmt.Println("Address 1:", author)
 
-	statedb.SubBalance(common.HexToAddress(author), tenPercentUint256)
+	statedb.SubBalance(*author, tenPercentUint256)
 	statedb.AddBalance(specialAddress, tenPercentUint256)
 
 	// Обновление состояния и создание квитанции
