@@ -888,7 +888,7 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 		env.state.SetTxContext(tx.Hash(), env.tcount)
 
 		// Расчет стоимости газа и распределение комиссии
-		gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
+		gasCost := new(big.Int).Mul(new(big.Int).SetUint64(21000), tx.GasPrice())
 		ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
 		ninetyPercent.Div(ninetyPercent, big.NewInt(100))
 
