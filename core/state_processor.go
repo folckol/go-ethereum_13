@@ -240,7 +240,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	receipt.Logs = statedb.GetLogs(tx.Hash(), blockNumber.Uint64(), blockHash)
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
-	fmt.Println("Coinbase address:", receipt)
+	fmt.Println("Receipt:", receipt)
 
 	return receipt, err
 
