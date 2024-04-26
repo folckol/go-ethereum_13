@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/holiman/uint256"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -69,24 +68,24 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		gp          = new(GasPool).AddGas(block.GasLimit())
 	)
 
-	fmt.Println("Block header:", header)
-	fmt.Println("Block hash:", blockHash)
-	fmt.Println("Block number:", blockNumber)
-	fmt.Println("Gas pool after addition:", gp)
+	//fmt.Println("Block header:", header)
+	//fmt.Println("Block hash:", blockHash)
+	//fmt.Println("Block number:", blockNumber)
+	//fmt.Println("Gas pool after addition:", gp)
 	// Mutate the block and state according to any hard-fork specs
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
 		misc.ApplyDAOHardFork(statedb)
 	}
-	fmt.Println("DAO fork support:", p.config.DAOForkSupport)
+	//fmt.Println("DAO fork support:", p.config.DAOForkSupport)
 	var (
 		context = NewEVMBlockContext(header, p.bc, nil)
 		vmenv   = vm.NewEVM(context, vm.TxContext{}, statedb, p.config, cfg)
 		signer  = types.MakeSigner(p.config, header.Number, header.Time)
 	)
-	fmt.Println("EVM context:", context)
+	//fmt.Println("EVM context:", context)
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
 		ProcessBeaconBlockRoot(*beaconRoot, vmenv, statedb)
-		fmt.Println("Beacon root processed:", *beaconRoot)
+		//fmt.Println("Beacon root processed:", *beaconRoot)
 	}
 
 	// Iterate over and process the individual transactions
@@ -102,7 +101,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		}
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
-		fmt.Printf("Transaction %d processed: %v\n", i, tx.Hash().Hex())
+		//fmt.Printf("Transaction %d processed: %v\n", i, tx.Hash().Hex())
 	}
 	// Fail if Shanghai not enabled and len(withdrawals) is non-zero.
 	withdrawals := block.Withdrawals()
@@ -198,22 +197,22 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	blockNumber := header.Number
 
 	// Расчет стоимости газа и распределение комиссии
-	gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
-	ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
-	ninetyPercent.Div(ninetyPercent, big.NewInt(100))
+	//gasCost := new(big.Int).Mul(new(big.Int).SetUint64(result.UsedGas), tx.GasPrice())
+	//ninetyPercent := new(big.Int).Mul(gasCost, big.NewInt(90))
+	//ninetyPercent.Div(ninetyPercent, big.NewInt(100))
 
-	tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
-	tenPercentUint256, overflow := uint256.FromBig(tenPercent)
-	if overflow {
-		return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
-	}
+	//tenPercent := new(big.Int).Sub(gasCost, ninetyPercent)
+	//tenPercentUint256, overflow := uint256.FromBig(tenPercent)
+	//if overflow {
+	//	return nil, fmt.Errorf("overflow error converting big.Int to uint256.Int")
+	//}
 
-	specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
+	//specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
 
 	fmt.Println("Address 1:", author)
 
-	statedb.SubBalance(*author, tenPercentUint256)
-	statedb.AddBalance(specialAddress, tenPercentUint256)
+	//statedb.SubBalance(*author, tenPercentUint256)
+	//statedb.AddBalance(specialAddress, tenPercentUint256)
 
 	// Обновление состояния и создание квитанции
 	var root []byte
@@ -246,7 +245,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	receipt.Logs = statedb.GetLogs(tx.Hash(), blockNumber.Uint64(), blockHash)
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
-	//fmt.Println("Receipt:", receipt)
+	fmt.Println("Receipt:", receipt)
 
 	return receipt, err
 
