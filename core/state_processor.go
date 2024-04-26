@@ -179,7 +179,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	}
 
 	evm.Reset(txContext, statedb)
-	result, err = ApplyMessage(evm, msg, gp) // Присвоение значения result
+	result, err := ApplyMessage(evm, msg, gp) // Присвоение значения result
 	if err != nil {
 		return nil, err
 	}
