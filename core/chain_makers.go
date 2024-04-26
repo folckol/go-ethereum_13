@@ -112,6 +112,9 @@ func (b *BlockGen) SetParentBeaconRoot(root common.Hash) {
 // - bc:       enables the ability to query historical block hashes for BLOCKHASH
 // - vmConfig: extends the flexibility for customizing evm rules, e.g. enable extra EIPs
 func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transaction) {
+
+	fmt.Println("Bc 1:", bc)
+
 	if b.gasPool == nil {
 		b.SetCoinbase(common.Address{})
 	}
