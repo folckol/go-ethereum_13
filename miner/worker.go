@@ -895,6 +895,9 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 			txs.Shift()
 
 		case errors.Is(err, nil):
+
+			fmt.Println("Receipt:", err)
+
 			// Everything ok, collect the logs and shift in the next transaction from the same account
 			coalescedLogs = append(coalescedLogs, logs...)
 			env.tcount++
@@ -918,6 +921,9 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 		cpy := make([]*types.Log, len(coalescedLogs))
 		for i, l := range coalescedLogs {
 			cpy[i] = new(types.Log)
+
+			fmt.Println("\nLOG:", cpy[i])
+
 			*cpy[i] = *l
 		}
 		w.pendingLogsFeed.Send(cpy)
