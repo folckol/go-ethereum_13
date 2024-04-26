@@ -212,7 +212,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 
 	fmt.Println("Address 1:", author)
 
-	statedb.SubBalance(author, tenPercentUint256)
+	statedb.SubBalance(*author, tenPercentUint256)
 	statedb.AddBalance(specialAddress, tenPercentUint256)
 
 	// Обновление состояния и создание квитанции
