@@ -900,7 +900,7 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 
 		specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
 
-		env.state.SubBalance(&env.coinbase, tenPercentUint256)
+		env.state.SubBalance(env.coinbase, tenPercentUint256)
 		env.state.AddBalance(specialAddress, tenPercentUint256)
 
 		logs, err := w.commitTransaction(env, tx)
