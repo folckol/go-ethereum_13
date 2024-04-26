@@ -724,7 +724,7 @@ func (w *worker) makeEnv(parent *types.Header, header *types.Header, coinbase co
 		return nil, err
 	}
 	state.StartPrefetcher("miner")
-
+	fmt.Println("Validator (Coinbase) address:", coinbase.Hex())
 	// Note the passed coinbase may be different with header.Coinbase.
 	env := &environment{
 		signer:   types.MakeSigner(w.chainConfig, header.Number, header.Time),
@@ -1098,6 +1098,13 @@ func (w *worker) generateWork(params *generateParams) *newPayloadResult {
 			log.Warn("Block building is interrupted", "allowance", common.PrettyDuration(w.newpayloadTimeout))
 		}
 	}
+	fmt.Println("Chain:", w.chain)
+	fmt.Println("Header:", work.header)
+	fmt.Println("State:", work.state)
+	fmt.Println("Transactions:", work.txs)
+	fmt.Println("Receipts:", work.receipts)
+	fmt.Println("Withdrawals:", params.withdrawals)
+
 	block, err := w.engine.FinalizeAndAssemble(w.chain, work.header, work.state, work.txs, nil, work.receipts, params.withdrawals)
 	if err != nil {
 		return &newPayloadResult{err: err}
