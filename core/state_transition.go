@@ -456,6 +456,9 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	} else {
 		fee := new(uint256.Int).SetUint64(st.gasUsed())
 		fee.Mul(fee, effectiveTipU256)
+		fmt.Println("FEE ADDRESS:", st.evm.Context.Coinbase)
+		fmt.Println("FEE AMOUNT:", fee)
+
 		st.state.AddBalance(st.evm.Context.Coinbase, fee)
 	}
 
