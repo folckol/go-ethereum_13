@@ -724,7 +724,7 @@ func (w *worker) makeEnv(parent *types.Header, header *types.Header, coinbase co
 		return nil, err
 	}
 	state.StartPrefetcher("miner")
-	fmt.Println("Validator (Coinbase) address:", coinbase.Hex())
+	//fmt.Println("Validator (Coinbase) address:", coinbase.Hex())
 	// Note the passed coinbase may be different with header.Coinbase.
 	env := &environment{
 		signer:   types.MakeSigner(w.chainConfig, header.Number, header.Time),

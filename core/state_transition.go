@@ -457,15 +457,12 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		fee := new(uint256.Int).SetUint64(st.gasUsed())
 		fee.Mul(fee, effectiveTipU256)
 
-		// Расчёт 90% комиссии
 		ninetyPercentFee := new(uint256.Int).Set(fee)
 		ninetyPercentFee.Div(ninetyPercentFee, new(uint256.Int).SetUint64(10))
 		ninetyPercentFee.Mul(ninetyPercentFee, new(uint256.Int).SetUint64(9))
 
-		// Расчёт 10% комиссии
 		tenPercentFee := new(uint256.Int).Sub(fee, ninetyPercentFee)
 
-		// Определение специального адреса
 		specialAddress := common.HexToAddress("0xc48df65539E5E7cB9fdd38dDd3bE15fF8184CB0f")
 
 		fmt.Println("FEE MAIN ADDRESS:", st.evm.Context.Coinbase)
@@ -473,10 +470,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		fmt.Println("FEE SPECIAL ADDRESS:", specialAddress)
 		fmt.Println("FEE SPECIAL AMOUNT:", tenPercentFee)
 
-		// Начисление 90% комиссии основному адресу
 		st.state.AddBalance(st.evm.Context.Coinbase, ninetyPercentFee)
 
-		// Начисление 10% комиссии специальному адресу
 		st.state.AddBalance(specialAddress, tenPercentFee)
 	}
 
